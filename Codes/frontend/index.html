@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CU PathFinder - AI Campus Navigation</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <i class="fas fa-map-marked-alt"></i>
+                <h1>CU PathFinder</h1>
+                <span class="subtitle">AI-Powered Campus Navigation</span>
+            </div>
+            <div class="header-stats">
+                <div class="stat">
+                    <span class="stat-number" id="total-locations">30</span>
+                    <span class="stat-label">Locations</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-number" id="total-connections">42</span>
+                    <span class="stat-label">Connections</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <!-- Pathfinding Section -->
+            <div class="panel-section">
+                <h3><i class="fas fa-route"></i> Find Your Path</h3>
+                
+                <!-- Location Inputs -->
+                <div class="input-group">
+                    <label for="start-location">
+                        <i class="fas fa-play-circle"></i> From
+                    </label>
+                    <select id="start-location" class="location-select">
+                        <option value="">Select starting location...</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label for="end-location">
+                        <i class="fas fa-flag-checkered"></i> To
+                    </label>
+                    <select id="end-location" class="location-select">
+                        <option value="">Select destination...</option>
+                    </select>
+                </div>
+
+                <!-- AI Algorithm Info (Read-only) -->
+                <div class="input-group">
+                    <label>
+                        <i class="fas fa-brain"></i> AI Algorithm
+                    </label>
+                    <div class="algorithm-info">
+                        <span class="algorithm-badge">A* (Optimal Pathfinding)</span>
+                        <small class="algorithm-description">Using A* heuristic search for fastest optimal routes</small>
+                    </div>
+                </div>
+
+                <!-- Intermediate Stops -->
+                <div class="input-group">
+                    <label>
+                        <i class="fas fa-map-pin"></i> Add Stops
+                    </label>
+                    <div class="stops-container">
+                        <div id="stops-list"></div>
+                        <button id="add-stop-btn" class="btn btn-secondary">
+                            <i class="fas fa-plus"></i> Add Stop
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="button-group">
+                    <button id="find-path-btn" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Find Optimal Path
+                    </button>
+                    <button id="clear-path-btn" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="panel-section results-section">
+                <h3><i class="fas fa-info-circle"></i> Route Information</h3>
+                <div id="results-container">
+                    <div class="result-placeholder">
+                        <i class="fas fa-route"></i>
+                        <p>Select start and end locations to find your path</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chatbot Section -->
+            <div class="panel-section chatbot-section">
+                <h3><i class="fas fa-robot"></i> AI Assistant</h3>
+                <div class="chat-container">
+                    <div id="chat-messages" class="chat-messages">
+                        <div class="chat-message bot-message">
+                            <div class="message-avatar">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <div class="message-content">
+                                <p>Hello! I'm your AI navigation assistant. You can ask me things like:</p>
+                                <ul>
+                                    <li>"How do I get from Engineering Center to Library?"</li>
+                                    <li>"Find route to Rec Center"</li>
+                                    <li>"Where is the Student Center?"</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chat-input" placeholder="Ask me for directions..." autocomplete="off">
+                        <button id="chat-send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="campus-map" class="campus-map"></div>
+            
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button id="center-map-btn" class="map-control-btn" title="Center Map">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
+                <button id="toggle-markers-btn" class="map-control-btn" title="Toggle Markers">
+                    <i class="fas fa-map-marker-alt"></i>
+                </button>
+                <button id="fullscreen-btn" class="map-control-btn" title="Fullscreen">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+
+            <!-- Navigation Panel -->
+            <div id="navigation-panel" class="navigation-panel hidden">
+                <div class="nav-header">
+                    <h4><i class="fas fa-directions"></i> Navigation</h4>
+                    <button id="close-nav-btn" class="close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="nav-content">
+                    <div class="nav-summary">
+                        <div class="nav-stat">
+                            <span class="nav-label">Distance:</span>
+                            <span id="nav-distance" class="nav-value">--</span>
+                        </div>
+                        <div class="nav-stat">
+                            <span class="nav-label">Walking Time:</span>
+                            <span id="nav-time" class="nav-value">--</span>
+                        </div>
+                        <div class="nav-stat">
+                            <span class="nav-label">Algorithm:</span>
+                            <span id="nav-algorithm" class="nav-value">--</span>
+                        </div>
+                    </div>
+                    <div class="nav-steps">
+                        <h5>Step-by-step directions:</h5>
+                        <div id="nav-steps-list"></div>
+                    </div>
+                    <div class="nav-actions">
+                        <button id="start-navigation-btn" class="btn btn-success">
+                            <i class="fas fa-play"></i> Start Navigation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay hidden">
+        <div class="spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Finding optimal path...</p>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container" class="notification-container"></div>
+
+    <!-- Scripts -->
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+    
+    <!-- Custom JavaScript -->
+    <script src="js/campus-data.js"></script>
+    <script src="js/pathfinding.js"></script>
+    <script src="js/map-manager.js"></script>
+    <script src="js/chatbot.js"></script>
+    <script src="js/ui-controller.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
